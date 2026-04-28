@@ -30,25 +30,26 @@ jobs:
     - name: Сборка решения
       run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
 
-    - name: Запуск тестов с покрытием
-      # Используем --collect с coverlet.collector + явно указываем Release
+    - name: Запуск тестов с покрытием (через MSBuild)
+      # Используем /p:CollectCoverage вместо --collect
       run: >
         dotnet test CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj
-        --configuration Release
-        --collect:"XPlat Code Coverage"
-        --results-directory ./test-results
-        --
-        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
-        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.IncludeTestAssembly=true
+        /p:CollectCoverage=true
+        /p:CoverletOutputFormat=cobertura
+        /p:CoverletOutput=./test-results/coverage
+        --no-build
+        --verbosity normal
 
     - name: Диагностика (поиск файла)
       if: always()
       run: |
-        Write-Host "Все файлы *.xml в репозитории:"
+        Write-Host "🔍 Все файлы *.xml в репозитории:"
         Get-ChildItem -Path . -Filter *.xml -Recurse | ForEach-Object { Write-Host $_.FullName }
-        Write-Host "`nСодержимое папки test-results:"
+        Write-Host "`n🔍 Содержимое папки test-results:"
         if (Test-Path ./test-results) {
           Get-ChildItem -Path ./test-results -Recurse | ForEach-Object { Write-Host $_.FullName }
+        } else {
+          Write-Host "Папка test-results не найдена"
         }
 
     - name: Копирование отчёта в корень
@@ -59,9 +60,9 @@ jobs:
         
         if ($report) {
           Copy-Item $report.FullName -Destination ./coverage.xml
-          Write-Host "Отчёт найден: $($report.FullName)"
+          Write-Host "✅ Отчёт найден: $($report.FullName)"
         } else {
-          Write-Error "Отчёт о покрытии не найден. Проверьте диагностику выше."
+          Write-Error "❌ Отчёт о покрытии не найден. Проверьте диагностику выше."
           exit 1
         }
 
@@ -76,13 +77,13 @@ jobs:
         if (Test-Path ./coverage-report/Summary.json) {
           $summary = Get-Content ./coverage-report/Summary.json | ConvertFrom-Json
           $lineCoverage = $summary.Summary.LineCoverage
-          Write-Host "Текущее покрытие строк: $lineCoverage%"
+          Write-Host "📊 Текущее покрытие строк: $lineCoverage%"
           $threshold = [int]${{ env.COVERAGE_THRESHOLD }}
           if ($lineCoverage -lt $threshold) {
-            Write-Error "ОШИБКА: Покрытие ($lineCoverage%) ниже порога ($threshold%). Пайплайн завершён с ошибкой."
+            Write-Error "⛔ ОШИБКА: Покрытие ($lineCoverage%) ниже порога ($threshold%). Пайплайн завершён с ошибкой."
             exit 1
           } else {
-            Write-Host "Покрытие соответствует порогу."
+            Write-Host "✅ Покрытие соответствует порогу."
           }
         } else {
           Write-Error "Файл Summary.json не найден."
