@@ -1,0 +1,92 @@
+﻿// <copyright file="AuthManager.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
+
+namespace CSharpQuizWPF.Core
+{
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
+    /// <summary>
+    /// Представляет пользователя системы.
+    /// </summary>
+    public class User
+    {
+        /// <summary>
+        /// Gets or sets уникальный идентификатор пользователя.
+        /// </summary>
+        public int Id { get; set; }
+
+        /// <summary>
+        /// Gets or sets имя пользователя.
+        /// </summary>
+        public string Username { get; set; }
+
+        /// <summary>
+        /// Gets or sets пароль пользователя.
+        /// </summary>
+        public string Password { get; set; }
+
+        /// <summary>
+        /// Gets or sets роль пользователя.
+        /// </summary>
+        public string Role { get; set; } = "User";
+    }
+
+    /// <summary>
+    /// Управляет аутентификацией и регистрацией пользователей.
+    /// </summary>
+    public class AuthManager
+    {
+        private readonly List<User> users = new List<User>();
+        private int nextId = 1;
+
+        /// <summary>
+        /// Регистрирует нового пользователя в системе.
+        /// </summary>
+        /// <param name="username">Имя пользователя.</param>
+        /// <param name="password">Пароль пользователя.</param>
+        /// <returns>Созданный объект пользователя.</returns>
+        /// <exception cref="ArgumentException">Если поля пустые.</exception>
+        /// <exception cref="InvalidOperationException">Если пользователь уже существует.</exception>
+        public User Register(string username, string password)
+        {
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+                throw new ArgumentException("Поля не могут быть пустыми");
+
+            if (users.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("Пользователь уже существует");
+
+            var user = new User { Id = nextId++, Username = username, Password = password };
+            users.Add(user);
+            return user;
+        }
+
+        /// <summary>
+        /// Выполняет вход пользователя по имени и паролю.
+        /// </summary>
+        /// <param name="username">Имя пользователя.</param>
+        /// <param name="password">Пароль пользователя.</param>
+        /// <returns>Объект пользователя при успешном входе.</returns>
+        /// <exception cref="InvalidOperationException">Если имя или пароль неверны.</exception>
+        public User Login(string username, string password)
+        {
+            var user = users.FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+            if (user == null || user.Password != password)
+                throw new InvalidOperationException("Неверное имя пользователя или пароль");
+            return user;
+        }
+
+        /// <summary>
+        /// Проверяет, является ли пароль достаточно надёжным.
+        /// </summary>
+        /// <param name="password">Пароль для проверки.</param>
+        /// <returns>True, если пароль надёжный; иначе False.</returns>
+        public bool IsPasswordStrong(string password)
+        {
+            if (string.IsNullOrEmpty(password)) return false;
+            return password.Length >= 8 && password.Any(char.IsDigit);
+        }
+    }
+}

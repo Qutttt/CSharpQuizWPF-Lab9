@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj" Id="6320ab9e-1a46-44ef-bc58-bb2c08fc9f96" />
+  <Project Path="CSharpQuizWPF/CSharpQuizWPF.csproj" Id="fe0cb44d-049d-4caf-b429-e7392379b604" />
+</Solution>

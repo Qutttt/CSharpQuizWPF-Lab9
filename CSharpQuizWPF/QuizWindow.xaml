@@ -1,0 +1,53 @@
+﻿<Window x:Class="CSharpQuizWPF.QuizWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Тестирование C#" Height="450" Width="550" 
+        WindowStartupLocation="CenterScreen">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock x:Name="lblUser" Grid.Row="0" FontWeight="Bold" Margin="0,0,0,10"
+                   AutomationProperties.AutomationId="lblUser"/>
+
+        <Button x:Name="btnLevel1" Grid.Row="1" Content="Уровень 1 (Основы)" 
+                Margin="0,0,255,10" Click="BtnLevel1_Click"
+                AutomationProperties.AutomationId="btnLevel1"/>
+        <Button x:Name="btnLevel2" Grid.Row="1" Content="Уровень 2 (ООП)" 
+                Margin="255,0,0,10" Click="BtnLevel2_Click"
+                AutomationProperties.AutomationId="btnLevel2"/>
+
+        <TextBlock x:Name="lblQuestion" Grid.Row="2" Margin="0,15,0,10" 
+                   TextWrapping="Wrap" MinHeight="40"
+                   AutomationProperties.AutomationId="lblQuestion"/>
+
+        <RadioButton x:Name="rbOption0" Grid.Row="3" Margin="20,5,20,5" 
+                     GroupName="QuizOptions" AutomationProperties.AutomationId="rbOption0"/>
+        <RadioButton x:Name="rbOption1" Grid.Row="4" Margin="20,5,20,5" 
+                     GroupName="QuizOptions" AutomationProperties.AutomationId="rbOption1"/>
+        <RadioButton x:Name="rbOption2" Grid.Row="5" Margin="20,5,20,5" 
+                     GroupName="QuizOptions" AutomationProperties.AutomationId="rbOption2"/>
+        <RadioButton x:Name="rbOption3" Grid.Row="6" Margin="20,5,20,5" 
+                     GroupName="QuizOptions" AutomationProperties.AutomationId="rbOption3"/>
+
+        <Button x:Name="btnNext" Grid.Row="7" Content="Ответить / Далее" 
+                HorizontalAlignment="Center" Padding="15,5" IsEnabled="False" 
+                Click="BtnNext_Click" AutomationProperties.AutomationId="btnNext"/>
+
+        <TextBlock x:Name="lblResult" Grid.Row="7" Margin="0,40,0,0" 
+                   HorizontalAlignment="Left" FontWeight="Bold"
+                   AutomationProperties.AutomationId="lblResult"/>
+
+        <Button x:Name="btnLogout" Grid.Row="7" Content="Выйти" 
+                HorizontalAlignment="Right" Margin="0,40,0,0" Padding="10,5" 
+                Click="BtnLogout_Click" AutomationProperties.AutomationId="btnLogout"/>
+    </Grid>
+</Window>
