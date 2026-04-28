@@ -15,6 +15,10 @@
 	<!-- Тестовые фреймворки и утилиты -->
 	<ItemGroup>
 		<!-- MSTest (основной фреймворк) -->
+		<PackageReference Include="coverlet.collector" Version="10.0.0">
+		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		  <PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 		<PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
 		<PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
 

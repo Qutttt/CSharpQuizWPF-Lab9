@@ -1,15 +1,3 @@
-name: CI/CD Pipeline - CSharpQuizWPF
-
-on:
-  push:
-    branches: [ "master" ]
-
-env:
-  DOTNET_VERSION: '8.0.x'
-  SOLUTION_FILE: 'CSharpQuizWPF.slnx'
-  TEST_PROJECT: 'CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj'
-  COVERAGE_THRESHOLD: 70 
-
 jobs:
   build-and-analyze:
     name: Сборка, Тесты и Покрытие
@@ -30,39 +18,51 @@ jobs:
     - name: Сборка решения
       run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
 
-    - name: Запуск тестов с покрытием
-      run: dotnet test ${{ env.TEST_PROJECT }} --collect:"XPlat Code Coverage" --results-directory ./test-results
+    - name: Создание папки результатов
+      run: New-Item -ItemType Directory -Force -Path ./test-results
 
-    - name: Поиск и копирование отчета  
+    - name: Запуск тестов с покрытием
+      run: >
+        dotnet test CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj
+        --collect:"XPlat Code Coverage"
+        --results-directory ./test-results
+        -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+
+    - name: Диагностика (поиск файла)
+      if: always()
+      run: Get-ChildItem -Path ./test-results -Recurse | Format-Table Name, Length
+
+    - name: Копирование отчёта в корень
       run: |
         $report = Get-ChildItem -Path ./test-results -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1
-        if ($report) { 
-          Copy-Item $report.FullName -Destination ./coverage.xml 
-          Write-Host "Отчет найден: $($report.FullName)"
-        } else { 
-          Write-Error "Отчет о покрытии не найден в папке test-results" 
+        if ($report) {
+          Copy-Item $report.FullName -Destination ./coverage.xml
+          Write-Host "Отчёт найден: $($report.FullName)"
+        } else {
+          Write-Error "Отчёт о покрытии не найден. Проверьте наличие coverlet.collector в .csproj"
           exit 1
         }
 
     - name: Установка ReportGenerator
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
-    - name: Генерация HTML отчета
+    - name: Генерация HTML-отчёта
       run: reportgenerator -reports:./coverage.xml -targetdir:./coverage-report -reporttypes:HtmlSummary
 
     - name: Проверка порога покрытия (Threshold Check)
       run: |
         $summary = Get-Content ./coverage-report/Summary.json | ConvertFrom-Json
         $lineCoverage = $summary.Summary.LineCoverage
-        Write-Host "Текущее покрытие: $lineCoverage%"
-        if ($lineCoverage -lt ${{ env.COVERAGE_THRESHOLD }}) {
-          Write-Error "ОШИБКА: Покрытие кода ($lineCoverage%) ниже установленного порога (${{ env.COVERAGE_THRESHOLD }}%)."
+        Write-Host "Текущее покрытие строк: $lineCoverage%"
+        $threshold = [int]${{ env.COVERAGE_THRESHOLD }}
+        if ($lineCoverage -lt $threshold) {
+          Write-Error "ОШИБКА: Покрытие ($lineCoverage%) ниже порога ($threshold%). Пайплайн завершён с ошибкой."
           exit 1
         } else {
-          Write-Host "Покрытие кода соответствует требованиям."
+          Write-Host "Покрытие соответствует порогу."
         }
 
-    - name: Сохранение артефактов (Отчет и Сборка)
+    - name: Сохранение артефактов
       uses: actions/upload-artifact@v4
       with:
         name: Quality-Reports
