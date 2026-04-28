@@ -9,32 +9,6 @@ namespace CSharpQuizWPF.Core
     using System.Linq;
 
     /// <summary>
-    /// Представляет пользователя системы.
-    /// </summary>
-    public class User
-    {
-        /// <summary>
-        /// Gets or sets уникальный идентификатор пользователя.
-        /// </summary>
-        public int Id { get; set; }
-
-        /// <summary>
-        /// Gets or sets имя пользователя.
-        /// </summary>
-        public string Username { get; set; }
-
-        /// <summary>
-        /// Gets or sets пароль пользователя.
-        /// </summary>
-        public string Password { get; set; }
-
-        /// <summary>
-        /// Gets or sets роль пользователя.
-        /// </summary>
-        public string Role { get; set; } = "User";
-    }
-
-    /// <summary>
     /// Управляет аутентификацией и регистрацией пользователей.
     /// </summary>
     public class AuthManager
@@ -53,13 +27,17 @@ namespace CSharpQuizWPF.Core
         public User Register(string username, string password)
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
                 throw new ArgumentException("Поля не могут быть пустыми");
+            }
 
-            if (users.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
+            if (this.users.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
+            {
                 throw new InvalidOperationException("Пользователь уже существует");
+            }
 
-            var user = new User { Id = nextId++, Username = username, Password = password };
-            users.Add(user);
+            var user = new User { Id = this.nextId++, Username = username, Password = password };
+            this.users.Add(user);
             return user;
         }
 
@@ -72,9 +50,12 @@ namespace CSharpQuizWPF.Core
         /// <exception cref="InvalidOperationException">Если имя или пароль неверны.</exception>
         public User Login(string username, string password)
         {
-            var user = users.FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+            var user = this.users.FirstOrDefault(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
             if (user == null || user.Password != password)
+            {
                 throw new InvalidOperationException("Неверное имя пользователя или пароль");
+            }
+
             return user;
         }
 
@@ -85,7 +66,11 @@ namespace CSharpQuizWPF.Core
         /// <returns>True, если пароль надёжный; иначе False.</returns>
         public bool IsPasswordStrong(string password)
         {
-            if (string.IsNullOrEmpty(password)) return false;
+            if (string.IsNullOrEmpty(password))
+            {
+                return false;
+            }
+
             return password.Length >= 8 && password.Any(char.IsDigit);
         }
     }
