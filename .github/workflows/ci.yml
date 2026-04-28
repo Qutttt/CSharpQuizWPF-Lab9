@@ -3,16 +3,16 @@ name: CI/CD Pipeline - CSharpQuizWPF
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
 
 env:
   DOTNET_VERSION: '8.0.x'
   SOLUTION_FILE: 'CSharpQuizWPF.slnx'
+  TEST_PROJECT: 'CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj'
+  COVERAGE_THRESHOLD: 70 
 
 jobs:
   build-and-analyze:
-    name: Сборка и анализ качества
+    name: Сборка, Тесты и Покрытие
     runs-on: windows-latest
 
     steps:
@@ -27,17 +27,46 @@ jobs:
     - name: Восстановление зависимостей
       run: dotnet restore ${{ env.SOLUTION_FILE }}
 
-    - name: Сборка решения (включает StyleCop анализ)
+    - name: Сборка решения
       run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
 
-    - name: Запуск модульных тестов
-      run: dotnet test --no-build --verbosity normal
+    - name: Запуск тестов с покрытием
+      run: dotnet test ${{ env.TEST_PROJECT }} --collect:"XPlat Code Coverage" --results-directory ./test-results
 
-    - name: Сохранение артефактов сборки
+    - name: Поиск и копирование отчета  
+      run: |
+        $report = Get-ChildItem -Path ./test-results -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1
+        if ($report) { 
+          Copy-Item $report.FullName -Destination ./coverage.xml 
+          Write-Host "Отчет найден: $($report.FullName)"
+        } else { 
+          Write-Error "Отчет о покрытии не найден в папке test-results" 
+          exit 1
+        }
+
+    - name: Установка ReportGenerator
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+    - name: Генерация HTML отчета
+      run: reportgenerator -reports:./coverage.xml -targetdir:./coverage-report -reporttypes:HtmlSummary
+
+    - name: Проверка порога покрытия (Threshold Check)
+      run: |
+        $summary = Get-Content ./coverage-report/Summary.json | ConvertFrom-Json
+        $lineCoverage = $summary.Summary.LineCoverage
+        Write-Host "Текущее покрытие: $lineCoverage%"
+        if ($lineCoverage -lt ${{ env.COVERAGE_THRESHOLD }}) {
+          Write-Error "ОШИБКА: Покрытие кода ($lineCoverage%) ниже установленного порога (${{ env.COVERAGE_THRESHOLD }}%)."
+          exit 1
+        } else {
+          Write-Host "Покрытие кода соответствует требованиям."
+        }
+
+    - name: Сохранение артефактов (Отчет и Сборка)
       uses: actions/upload-artifact@v4
       with:
-        name: CSharpQuizWPF-Build-Artifacts
+        name: Quality-Reports
         path: |
+          ./coverage-report/
           CSharpQuizWPF/bin/Release/net472/
-          CSharpQuizWPF.Tests/bin/Release/net472/
         retention-days: 7
