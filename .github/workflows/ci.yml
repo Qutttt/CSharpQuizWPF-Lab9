@@ -1,3 +1,15 @@
+name: CI/CD Pipeline - CSharpQuizWPF
+
+on:
+  push:
+    branches: [ "master" ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  SOLUTION_FILE: 'CSharpQuizWPF.slnx'
+  TEST_PROJECT: 'CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj'
+  COVERAGE_THRESHOLD: 70 
+
 jobs:
   build-and-analyze:
     name: Сборка, Тесты и Покрытие
