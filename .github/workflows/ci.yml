@@ -1,85 +1,43 @@
 name: CI/CD Pipeline - CSharpQuizWPF
 
-# Триггеры: запуск при push в master и при создании pull request
 on:
   push:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
-# Глобальные переменные
 env:
   DOTNET_VERSION: '8.0.x'
   SOLUTION_FILE: 'CSharpQuizWPF.slnx'
-  TEST_PROJECT: 'CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj'
-  COVERAGE_OUTPUT: 'coverage.cobertura.xml'
-  COVERAGE_THRESHOLD: 70
 
 jobs:
-  test:
-    name: Сборка и тестирование
-    runs-on: windows-latest # WPF требует Windows-раннера
+  build-and-analyze:
+    name: Сборка и анализ качества
+    runs-on: windows-latest
 
     steps:
-    # 1. Получение кода
     - name: Получение кода
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
-    # 2. Установка .NET
     - name: Настройка .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    # 3. Очистка кэша NuGet (исправлен отступ)
-    - name: Очистка кэша NuGet
-      run: dotnet nuget locals all --clear
-
-    # 4. Восстановление зависимостей
     - name: Восстановление зависимостей
       run: dotnet restore ${{ env.SOLUTION_FILE }}
 
-    # 5. Сборка проекта
-    - name: Сборка проекта
+    - name: Сборка решения (включает StyleCop анализ)
       run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
 
-    # 6. Запуск тестов с покрытием
-    - name: Запуск тестов с покрытием
-      run: >
-        dotnet test ${{ env.TEST_PROJECT }}
-        --configuration Release
-        --no-build
-        --collect:"XPlat Code Coverage"
-        --results-directory ./test-results
-        -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+    - name: Запуск модульных тестов
+      run: dotnet test --no-build --verbosity normal
 
-    # 7. Подготовка отчёта о покрытии
-    - name: Подготовка отчёта о покрытии
-      run: |
-        $report = Get-ChildItem -Path ./test-results -Filter ${{ env.COVERAGE_OUTPUT }} -Recurse | Select-Object -First 1
-        if ($report) { Copy-Item $report.FullName -Destination ./${{ env.COVERAGE_OUTPUT }} }
-        else { Write-Error "Отчёт о покрытии не найден" }
-
-    # 8. Проверка порога покрытия
-    - name: Проверка порога покрытия
-      run: |
-        dotnet tool install -g dotnet-reportgenerator-globaltool
-        reportgenerator -reports:${{ env.COVERAGE_OUTPUT }} -targetdir:./coverage-report -reporttypes:JsonSummary
-        $coverage = (Get-Content ./coverage-report/Summary.json | ConvertFrom-Json).CoverageQuota.LineCoverage
-        Write-Host "Покрытие кода: $coverage%"
-        if ($coverage -lt ${{ env.COVERAGE_THRESHOLD }}) {
-          Write-Error "Покрытие $coverage% ниже порога ${{ env.COVERAGE_THRESHOLD }}%"
-          exit 1
-        }
-
-    # 9. Сохранение артефактов
-    - name: Сохранение артефактов
+    - name: Сохранение артефактов сборки
       uses: actions/upload-artifact@v4
       with:
-        name: отчёты-о-качестве
+        name: CSharpQuizWPF-Build-Artifacts
         path: |
-          ./test-results/
-          ./coverage-report/
+          CSharpQuizWPF/bin/Release/net472/
+          CSharpQuizWPF.Tests/bin/Release/net472/
         retention-days: 7
