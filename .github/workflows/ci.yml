@@ -30,27 +30,35 @@ jobs:
     - name: Сборка решения
       run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
 
-    - name: Запуск тестов с покрытием
-      # ВАЖНО: аргументы для DataCollector передаются через --
+    - name: Запуск тестов с покрытием (через MSBuild параметры)
+      # Используем /p:CollectCoverage вместо --collect
       run: >
         dotnet test CSharpQuizWPF.Tests/CSharpQuizWPF.Tests.csproj
-        --collect:"XPlat Code Coverage"
-        --results-directory ./test-results
-        --
-        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
-        DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.IncludeTestAssembly=true
+        /p:CollectCoverage=true
+        /p:CoverletOutputFormat=cobertura
+        /p:CoverletOutput=./test-results/coverage
+        --no-build
+        --verbosity normal
 
     - name: Диагностика (поиск файла)
       if: always()
       run: |
-        Write-Host "Поиск файлов в test-results:"
-        Get-ChildItem -Path ./test-results -Recurse -File | Format-Table FullName, Length
-        Write-Host "Поиск файлов cobertura.xml:"
-        Get-ChildItem -Path . -Filter *.cobertura.xml -Recurse | Format-Table FullName, Length
+        Write-Host "Все файлы в репозитории с расширением .xml:"
+        Get-ChildItem -Path . -Filter *.xml -Recurse | ForEach-Object { Write-Host $_.FullName }
+        Write-Host "`nВсе файлы в папке test-results:"
+        if (Test-Path ./test-results) {
+          Get-ChildItem -Path ./test-results -Recurse | ForEach-Object { Write-Host $_.FullName }
+        } else {
+          Write-Host "Папка test-results не найдена"
+        }
 
     - name: Копирование отчёта в корень
       run: |
-        $report = Get-ChildItem -Path . -Filter coverage.cobertura.xml -Recurse | Select-Object -First 1
+        # Ищем файл с именем coverage.cobertura.xml или coverage.xml
+        $report = Get-ChildItem -Path . -Filter *coverage*.xml -Recurse | 
+                  Where-Object { $_.Name -match "coverage.*\.xml$" } | 
+                  Select-Object -First 1
+        
         if ($report) {
           Copy-Item $report.FullName -Destination ./coverage.xml
           Write-Host "Отчёт найден: $($report.FullName)"
@@ -67,15 +75,20 @@ jobs:
 
     - name: Проверка порога покрытия (Threshold Check)
       run: |
-        $summary = Get-Content ./coverage-report/Summary.json | ConvertFrom-Json
-        $lineCoverage = $summary.Summary.LineCoverage
-        Write-Host "Текущее покрытие строк: $lineCoverage%"
-        $threshold = [int]${{ env.COVERAGE_THRESHOLD }}
-        if ($lineCoverage -lt $threshold) {
-          Write-Error "ОШИБКА: Покрытие ($lineCoverage%) ниже порога ($threshold%). Пайплайн завершён с ошибкой."
-          exit 1
+        if (Test-Path ./coverage-report/Summary.json) {
+          $summary = Get-Content ./coverage-report/Summary.json | ConvertFrom-Json
+          $lineCoverage = $summary.Summary.LineCoverage
+          Write-Host "Текущее покрытие строк: $lineCoverage%"
+          $threshold = [int]${{ env.COVERAGE_THRESHOLD }}
+          if ($lineCoverage -lt $threshold) {
+            Write-Error "ОШИБКА: Покрытие ($lineCoverage%) ниже порога ($threshold%). Пайплайн завершён с ошибкой."
+            exit 1
+          } else {
+            Write-Host "Покрытие соответствует порогу."
+          }
         } else {
-          Write-Host "Покрытие соответствует порогу."
+          Write-Error "Файл Summary.json не найден. ReportGenerator не сработал."
+          exit 1
         }
 
     - name: Сохранение артефактов
