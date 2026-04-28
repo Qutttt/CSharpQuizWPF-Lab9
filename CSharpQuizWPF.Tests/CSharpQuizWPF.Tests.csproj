@@ -3,33 +3,25 @@
 	<PropertyGroup>
 		<TargetFramework>net472</TargetFramework>
 		<IsPackable>false</IsPackable>
-		<!-- Отключаем авто-генерацию AssemblyInfo, чтобы избежать дубликатов -->
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	</PropertyGroup>
 
-	<!-- Ссылка на основной проект -->
 	<ItemGroup>
 		<ProjectReference Include="..\CSharpQuizWPF\CSharpQuizWPF.csproj" />
 	</ItemGroup>
 
-	<!-- Тестовые фреймворки и утилиты -->
 	<ItemGroup>
-		<!-- MSTest (основной фреймворк) -->
-		<PackageReference Include="coverlet.collector" Version="10.0.0">
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		  <PrivateAssets>all</PrivateAssets>
+		<!-- Coverlet для .NET Framework 4.7.2 -->
+		<PackageReference Include="coverlet.collector" Version="6.0.2">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
+
 		<PackageReference Include="MSTest.TestAdapter" Version="2.2.10" />
 		<PackageReference Include="MSTest.TestFramework" Version="2.2.10" />
-
-		<!-- SpecFlow (BDD-тесты) -->
 		<PackageReference Include="SpecFlow.MsTest" Version="3.9.74" />
 		<PackageReference Include="SpecFlow.Tools.MsBuild.Generation" Version="3.9.74" />
-
-		<!-- FluentAssertions (удобные утверждения) -->
 		<PackageReference Include="FluentAssertions" Version="8.9.0" />
-
-		<!-- FlaUI (UI-автотесты для WPF) -->
 		<PackageReference Include="FlaUI.Core" Version="4.0.0" />
 		<PackageReference Include="FlaUI.UIA3" Version="4.0.0" />
 		<PackageReference Include="Interop.UIAutomationClient" Version="10.19041.0" />
